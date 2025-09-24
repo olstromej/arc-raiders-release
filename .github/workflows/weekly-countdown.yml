@@ -1,0 +1,26 @@
+name: Arc Raiders Weekly Countdown
+
+on:
+  schedule:
+    # Every Monday at 14:00 UTC
+    - cron: '0 14 * * MON'
+  workflow_dispatch: # manual trigger option
+
+jobs:
+  post_countdown:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Post countdown
+        run: python countdown.py --once
