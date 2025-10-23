@@ -1,9 +1,9 @@
-name: Arc Raiders Weekly Countdown
+name: Arc Raiders Daily Countdown
 
 on:
   schedule:
-    # Every Monday at 14:00 UTC
-    - cron: '0 14 * * MON'
+    # Every day at 14:00 UTC
+    - cron: '0 14 * * *'
   workflow_dispatch: # manual trigger option
 
 jobs:
