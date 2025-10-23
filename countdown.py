@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-Arc Raiders weekly countdown poster.
+Arc Raiders daily countdown poster.
 
 Usage:
-  # one-shot (good for testing)
+  # one-shot (good for CI / cron / GitHub Actions)
   python countdown.py --once
 
-  # run as a daemon that posts every Monday at 10:00 local time
+  # run as a daemon that posts every day at POST_TIME local time
   python countdown.py
 """
 import argparse
@@ -32,7 +32,6 @@ HEADER_IMAGES = [
 THUMBNAIL = os.path.join(ASSETS_DIR, "logo.png")
 
 # Event datetimes (local system time)
-SERVER_SLAM = datetime.datetime(2025, 10, 17, 0, 0, 0)
 GAME_RELEASE = datetime.datetime(2025, 10, 30, 0, 0, 0)
 
 COLORS = [
@@ -45,7 +44,7 @@ COLORS = [
 ]
 
 # Scheduler config
-POST_TIME = "10:00"  # 10 AM every Monday
+POST_TIME = "10:00"  # 10 AM local time every day
 LAST_POST_FILE = ".last_post"
 
 # ====== HELPERS ======
@@ -76,8 +75,8 @@ def write_last_post_date(date_str: str):
 
 def build_embed(fields: List[dict], color: int, header_filename: str = None, thumb_filename: str = None, title: str = None):
     embed = {
-        "title": title or "📢 Arc Raiders Weekly Countdown",
-        "description": "Get ready, Raiders! Here are the upcoming events:",
+        "title": title or "📢 Arc Raiders Daily Countdown",
+        "description": "Get ready, Raiders! Upcoming event:",
         "color": color,
         "fields": fields,
         "footer": {"text": "Arc Raiders • Stay Ready, Raiders!"},
@@ -110,14 +109,9 @@ def post_with_attachments(webhook_url: str, payload: dict, attachment_paths: Lis
 
 # ====== MAIN POST LOGIC ======
 def send_countdown_once():
-    server_cd = get_countdown(SERVER_SLAM)
     release_cd = get_countdown(GAME_RELEASE)
 
     fields = []
-    if server_cd:
-        fields.append(
-            {"name": "🔥 Server Slam", "value": f"Begins in: **{server_cd}**\n📅 October 17, 2025", "inline": False}
-        )
     if release_cd:
         fields.append(
             {"name": "🚀 Official Game Release", "value": f"Launches in: **{release_cd}**\n📅 October 30, 2025", "inline": False}
@@ -125,8 +119,8 @@ def send_countdown_once():
 
     if not fields:
         final_embed = {
-            "title": "🎉 Arc Raiders — All Events Complete!",
-            "description": "Both the Server Slam and the Official Release dates are in the past. Enjoy the game!",
+            "title": "🎉 Arc Raiders — Release Complete!",
+            "description": "The Official Release date is in the past. Enjoy the game!",
             "color": random.choice(COLORS),
             "footer": {"text": "Arc Raiders • Stay Ready, Raiders!"},
             "timestamp": datetime.datetime.utcnow().isoformat(),
@@ -134,8 +128,8 @@ def send_countdown_once():
         payload = {"username": "Arc Raiders Countdown", "embeds": [final_embed]}
         attachments = [p for p in (random.choice(HEADER_IMAGES), THUMBNAIL) if p]
         post_with_attachments(WEBHOOK_URL, payload, attachments)
-        print("Posted final message; all events are complete.")
-        return "both_past"
+        print("Posted final message; event is complete.")
+        return "past"
 
     color = random.choice(COLORS)
     header = next((p for p in HEADER_IMAGES if os.path.exists(p)), None)
@@ -160,9 +154,10 @@ def run_daemon():
             return
         result = send_countdown_once()
         write_last_post_date(today_str)
-        if result == "both_past":
+        if result == "past":
             sys.exit(0)
-    schedule.every().monday.at(POST_TIME).do(job)
+    # post every day at POST_TIME
+    schedule.every().day.at(POST_TIME).do(job)
     while True:
         schedule.run_pending()
         time.sleep(30)
